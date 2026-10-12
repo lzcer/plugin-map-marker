@@ -1,0 +1,73 @@
+name: Release plugin
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Read version from tag
+        id: version
+        run: node scripts/release-version.mjs
+
+      - name: Build plugin with tag version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: bash ./gradlew build --no-daemon --console=plain "-Pversion=$RELEASE_VERSION"
+
+      - name: Save plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-map-marker-${{ steps.version.outputs.version }}
+          path: build/libs/plugin-map-marker-${{ steps.version.outputs.version }}.jar
+          if-no-files-found: error
+
+      - name: Publish release and JAR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="build/libs/plugin-map-marker-$RELEASE_VERSION.jar"
+          test -s "$asset"
+          if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --draft \
+              --title "$RELEASE_TAG" --generate-notes
+          fi
+          gh release upload "$RELEASE_TAG" "$asset" --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease="$PRERELEASE"

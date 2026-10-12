@@ -1,0 +1,19 @@
+apiVersion: v1alpha1
+kind: Setting
+metadata:
+  name: plugin-map-marker-settings
+spec:
+  forms:
+    - group: gaode
+      label: 地址解析
+      formSchema:
+        - $formkit: text
+          label: 高德 Key
+          help: 高德开放平台 Web 端（JS API）Key，仅用于后台地址解析。
+          name: key
+          value: ''
+        - $formkit: password
+          label: 高德安全密钥
+          help: 对应 Web 端（JS API）Key 的 securityJsCode。
+          name: securityJsCode
+          value: ''

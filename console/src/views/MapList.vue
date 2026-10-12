@@ -25,6 +25,7 @@ import {
 } from "@halo-dev/components";
 import GroupList from "../components/GroupList.vue";
 import MapEditingModal from "../components/MapEditingModal.vue";
+import GaodeModel from "../components/GaodeModel.vue";
 import { axiosInstance } from "@halo-dev/api-client";
 import type {Map, MapGroup} from "@/types";
 import yaml from "yaml";
@@ -43,6 +44,7 @@ const selectedLink = ref<Map | undefined>();
 const selectedLinks = ref<string[]>([]);
 const editingModal = ref(false);
 const checkedAll = ref(false);
+const showMapModal = ref(false);
 
 const groupQuery = useRouteQuery<string>("group");
 provide<Ref<string>>("groupQuery", groupQuery);
@@ -337,9 +339,21 @@ async function handleMove(link: Map, group: MapGroup) {
     </template>
   </MapEditingModal>
 
+  <GaodeModel v-model:visible="showMapModal" />
+
   <VPageHeader title="地图标记">
     <template #icon>
       <RiLinksLine class="links-mr-2 links-self-center"/>
+    </template>
+    <template #actions>
+      <VButton
+        v-permission="['plugin:maps:manage']"
+        size="sm"
+        type="default"
+        @click="showMapModal = true"
+      >
+        地图解析
+      </VButton>
     </template>
   </VPageHeader>
   <div class="links-p-4">

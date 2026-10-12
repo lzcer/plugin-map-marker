@@ -4,12 +4,14 @@ metadata:
   name: PluginMaps
 spec:
   enabled: true
-  version: 1.2.2
-  requires: '>=2.17.0'
+  version: 1.2.3-dev.3
+  requires: '>=2.20.11'
   author:
     name: cat.7
     website: https://github.com/PG-Z
   logo: logo.png
+  configMapName: plugin-map-marker-configmap
+  settingName: plugin-map-marker-settings
   homepage: https://github.com/PG-Z/plugin-map-marker
   displayName: 地图标记
   description: 在地图上标记文章
