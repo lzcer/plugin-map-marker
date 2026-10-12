@@ -34,8 +34,13 @@ test {
 }
 
 node {
-    pnpmVersion = '9.15.9'
+    pnpmVersion = project.hasProperty('ci') ? '' : '9.15.9'
+    download = !project.hasProperty('ci')
     nodeProjectDir = file("${project.projectDir}/console")
+}
+
+tasks.named('pnpmSetup') {
+    enabled = !project.hasProperty('ci')
 }
 
 tasks.named('pnpmInstall') {
