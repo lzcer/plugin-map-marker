@@ -44,8 +44,6 @@ const selectedLinks = ref<string[]>([]);
 const editingModal = ref(false);
 const checkedAll = ref(false);
 
-const showMapModal = ref(false);
-
 const groupQuery = useRouteQuery<string>("group");
 provide<Ref<string>>("groupQuery", groupQuery);
 
@@ -339,21 +337,9 @@ async function handleMove(link: Map, group: MapGroup) {
     </template>
   </MapEditingModal>
 
-  <GaodeModel
-    v-model:visible="showMapModal"
-  >
-  </GaodeModel>
-
   <VPageHeader title="地图标记">
     <template #icon>
       <RiLinksLine class="links-mr-2 links-self-center"/>
-    </template>
-    <template #actions>
-      <VSpace v-permission="['plugin:maps:manage']">
-        <VButton size="sm" type="default" @click="showMapModal = true">
-          地图解析
-        </VButton>
-      </VSpace>
     </template>
   </VPageHeader>
   <div class="links-p-4">

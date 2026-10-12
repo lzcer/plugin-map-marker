@@ -14,9 +14,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
-import run.halo.app.plugin.ReactiveSettingFetcher;
 import top.aiheiyo.map.service.helper.MarkerMapHelper;
-import top.aiheiyo.map.vo.MapConfig;
 import top.aiheiyo.map.vo.MapQuery;
 
 /**
@@ -30,7 +28,6 @@ import top.aiheiyo.map.vo.MapQuery;
 public class MapRouter {
 
     private final MarkerMapHelper markerMapHelper;
-    private final ReactiveSettingFetcher settingFetcher;
 
     private final String tag = "api.plugin.aiheiyo.top/v1alpha1/Link";
 
@@ -38,7 +35,7 @@ public class MapRouter {
     RouterFunction<ServerResponse> mapTemplateRoute() {
         return route(GET("/maps"),
                 request -> ServerResponse.ok()
-                        .render("maps", java.util.Map.of("mapConfigs", configs())));
+                        .render("maps"));
     }
 
     @Bean
@@ -68,9 +65,5 @@ public class MapRouter {
         MapQuery query = new MapQuery(request.exchange());
         return markerMapHelper.listMap(query)
                 .flatMap(maps -> ServerResponse.ok().bodyValue(maps));
-    }
-
-    private Mono<String> configs() {
-        return this.settingFetcher.get("mapbox").map(MapConfig::ofStr);
     }
 }

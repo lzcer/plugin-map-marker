@@ -10,8 +10,6 @@ spec:
     name: cat.7
     website: https://github.com/PG-Z
   logo: logo.png
-  configMapName: plugin-map-marker-configmap
-  settingName: plugin-map-marker-settings
   homepage: https://github.com/PG-Z/plugin-map-marker
   displayName: 地图标记
   description: 在地图上标记文章
