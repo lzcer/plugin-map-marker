@@ -1,8 +1,7 @@
 package top.aiheiyo.map.service.helper;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Sort;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.comparator.Comparators;
@@ -31,12 +30,14 @@ import java.util.stream.Collectors;
  *
  * @author : evan  Date: 2024/5/7
  */
-@Slf4j
-@RequiredArgsConstructor
 @Component
 public class MarkerMapHelper {
 
     private final ReactiveExtensionClient client;
+
+    public MarkerMapHelper(ReactiveExtensionClient client) {
+        this.client = client;
+    }
 
     public Flux<MapGroupVo> groupBy() {
         Flux<Map> mapFlux = listAll(null);
@@ -102,13 +103,20 @@ public class MarkerMapHelper {
     }
 
     public Mono<ListResult<Map>> listMap(MapQuery query) {
-        return client.list(Map.class, query.toPredicate(), query.toComparator(), query.getPage(), query.getSize())
+        return client.listAll(Map.class, query.toListOptions(), Sort.unsorted())
+                .filter(query.toPredicate())
+                .sort(query.toComparator())
+                .collectList()
+                .map(maps -> new ListResult<>(query.getPage(), query.getSize(), maps.size(),
+                        query.getPage() <= 0 || query.getSize() <= 0
+                                ? maps : ListResult.subList(maps, query.getPage(), query.getSize())))
                 .flatMap(result -> {
                     List<Map> maps = result.getItems();
                     Flux<Post> postFlux = Flux.fromIterable(maps)
+                            .filter(map -> StringUtils.isNotBlank(map.getSpec().getPost()))
                             .map(map -> map.getSpec().getPost())
                             .distinct()
-                            .flatMap(postName -> client.list(Post.class, post -> post.getMetadata().getName().equals(postName), null).next());
+                            .flatMap(postName -> client.fetch(Post.class, postName));
 
                     return postFlux.collectList()
                             .map(posts -> {

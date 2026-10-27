@@ -4,6 +4,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import { axiosInstance } from "@halo-dev/api-client";
 import cloneDeep from "lodash.clonedeep";
 import type { MapGroup } from "@/types";
+import GaodeModel from "./GaodeModel.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -38,13 +39,23 @@ const initialFormState: MapGroup = {
 const formState = ref<MapGroup>(cloneDeep(initialFormState));
 const saving = ref(false);
 const formVisible = ref(false);
+const showMapParser = ref(false);
+const coordinatesNode = ref<{ input(value: string): Promise<unknown> }>();
+
+function applyCoordinates(coordinates: string) {
+  if (coordinatesNode.value) {
+    coordinatesNode.value.input(coordinates);
+  } else {
+    formState.value.spec.coordinates = coordinates;
+  }
+}
 
 const isUpdateMode = computed(() => {
   return !!formState.value.metadata.creationTimestamp;
 });
 
 const modalTitle = computed(() => {
-  return isUpdateMode.value ? "编辑分组" : "新建分组";
+  return isUpdateMode.value ? "编辑地点" : "新建地点";
 });
 
 const annotationsFormRef = ref();
@@ -91,6 +102,7 @@ const handleCreateOrUpdateGroup = async () => {
 const onVisibleChange = (visible: boolean) => {
   emit("update:visible", visible);
   if (!visible) {
+    showMapParser.value = false;
     emit("close");
   }
 };
@@ -102,6 +114,7 @@ watch(
       if (props.group) formState.value = cloneDeep(props.group);
       formVisible.value = true;
     } else {
+      showMapParser.value = false;
       setTimeout(() => {
         formVisible.value = false;
         formState.value = cloneDeep(initialFormState);
@@ -135,16 +148,33 @@ watch(
         <div class="mt-5 divide-y divide-gray-100 md:col-span-3 md:mt-0">
           <FormKit
             name="displayName"
-            label="分组名称"
+            label="地点名称"
             type="text"
             validation="required"
           ></FormKit>
-          <FormKit
-            name="coordinates"
-            label="坐标（经度,纬度）"
-            type="text"
-            validation="required"
-          ></FormKit>
+          <div>
+            <div class="coordinates-label-row">
+              <label for="map-group-coordinates"
+                >坐标（经度,纬度）<span aria-hidden="true"> *</span></label
+              >
+              <button
+                type="button"
+                class="map-parser-button"
+                @click="showMapParser = true"
+              >
+                地图解析
+              </button>
+            </div>
+            <FormKit
+              id="map-group-coordinates"
+              name="coordinates"
+              type="text"
+              validation="required"
+              validation-label="坐标（经度,纬度）"
+              help="是否展示未关联文章的地点，可在插件设置的「地图显示」中调整。无需填写元数据。"
+              @node="coordinatesNode = $event"
+            ></FormKit>
+          </div>
         </div>
       </div>
     </FormKit>
@@ -184,4 +214,36 @@ watch(
       </VSpace>
     </template>
   </VModal>
+  <GaodeModel
+    v-model:visible="showMapParser"
+    :initial-coordinates="formState.spec.coordinates"
+    @confirm="applyCoordinates"
+  />
 </template>
+
+<style scoped>
+.coordinates-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.coordinates-label-row label span {
+  color: #dc2626;
+}
+.map-parser-button {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+.map-parser-button:hover {
+  background: #f3f4f6;
+}
+</style>

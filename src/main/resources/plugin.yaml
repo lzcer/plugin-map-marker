@@ -4,8 +4,8 @@ metadata:
   name: PluginMaps
 spec:
   enabled: true
-  version: 1.2.3-dev.3
-  requires: '>=2.20.11'
+  version: 1.2.7
+  requires: '>=2.27.1'
   author:
     name: cat.7
     website: https://github.com/PG-Z

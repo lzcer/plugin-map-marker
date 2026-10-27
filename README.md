@@ -13,7 +13,7 @@ Halo 2.0 适配插件, 在地图上标记文章。
         <img src="https://img.shields.io/github/release-date/PG-Z/plugin-map-marker?color=95E1D3&amp;label=release date&amp;logo=puppet&amp;logoColor=95E1D3&amp;style=for-the-badge" referrerpolicy="no-referrer" alt="release-date" />
     </a>
     <img src="https://img.shields.io/github/last-commit/PG-Z/plugin-map-marker?style=for-the-badge&amp;logo=lospec&amp;logoColor=a6d189" referrerpolicy="no-referrer" alt="last-commit" />
-    <a href="/"><img src="https://img.shields.io/badge/halo-%3E=2.20.11-8caaee?style=for-the-badge&amp;logo=hexo&amp;logoColor=8caaee" referrerpolicy="no-referrer" alt="Required Halo version" /></a>
+    <a href="/"><img src="https://img.shields.io/badge/halo-%3E=2.27.1-8caaee?style=for-the-badge&amp;logo=hexo&amp;logoColor=8caaee" referrerpolicy="no-referrer" alt="Required Halo version" /></a>
 </p>
 
 ## 1.1. 使用方式
@@ -22,12 +22,12 @@ Halo 2.0 适配插件, 在地图上标记文章。
     - GitHub Releases：访问 [Releases](https://github.com/lzcer/plugin-map-marker/releases) 下载 Assets 中的 JAR 文件。
 2. 安装，插件安装和更新方式可参考：<https://docs.halo.run/user-guide/plugins>
 3. 安装完成之后，访问 Console 左侧的**地图**菜单项，即可进行管理。
-4. 前台访问地址为 `/maps`，地图供应商、Public Token 和地图样式由主题配置。
-5. 后台地址解析：在插件设置的「地址解析」中填写高德 Web 端（JS API）Key 和安全密钥，在地图管理页点击「地图解析」，输入地址搜索或点击地图选点，复制坐标后粘贴到分组的坐标字段。坐标顺序为 `经度,纬度`。
+4. 前台访问地址为 `/footprints`（同时保留 `/maps`），地图供应商、Public Token 和地图样式由主题配置。
+5. 后台地址解析：在插件设置的「地址解析」中填写高德 Web 端（JS API）Key 和安全密钥，在「新建地点」或「编辑地点」弹窗的坐标栏上方点击「地图解析」，输入地址搜索或点击地图选点，再点击「确定」自动回填坐标。坐标顺序为 `经度,纬度`。
 
 ## 1.2. 主题适配
 
-目前此插件为主题端提供 `/maps` 路由和地点数据 API，地图页面模板 `maps.html` 由主题提供。
+目前此插件为主题端提供 `/footprints`、`/maps` 路由和地点数据 API，地图页面模板 `maps.html` 由主题提供。
 
 ### 1.2.1. 相关地点组件
 
@@ -54,7 +54,7 @@ Halo 2.0 适配插件, 在地图上标记文章。
 **list(postName, page, size)**
 
 **描述**
-> 根据文章唯一标识获取文章关联地图标记分组下的其他文章。
+> 根据文章唯一标识获取文章关联地点下的其他文章。
 
 **参数**
 
@@ -66,7 +66,7 @@ Halo 2.0 适配插件, 在地图上标记文章。
 
 ## 1.4. 使用技巧
 
-- 创建分组未挂载文章时, 地图不会显示该分组. 但是在元数据新增: `key:show value:show`, 就会展示在地图上.
+- 插件设置 → 地图显示 →「展示无文章关联地点」默认开启，填写有效坐标的地点即可显示；关闭后仅展示已关联文章的地点。无需添加 `show` 元数据，已有元数据可以保留。
 - 加载地图可能受网络影响.
 
 ## 1.5. 开发环境

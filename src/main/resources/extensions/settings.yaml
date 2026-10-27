@@ -4,6 +4,14 @@ metadata:
   name: plugin-map-marker-settings
 spec:
   forms:
+    - group: display
+      label: 地图显示
+      formSchema:
+        - $formkit: checkbox
+          label: 展示无文章关联地点
+          name: showPlacesWithoutPosts
+          value: true
+          help: 开启后，填写有效坐标的地点即可显示；关闭后，仅展示已关联文章的地点。无需填写元数据。
     - group: gaode
       label: 地址解析
       formSchema:

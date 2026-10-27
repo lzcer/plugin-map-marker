@@ -74,3 +74,5 @@ application-local.properties
 /src/main/resources/console/
 
 /node_modules/
+
+/.pnpm-store/

@@ -9,6 +9,7 @@ import org.springframework.util.comparator.Comparators;
 import org.springframework.web.server.ServerWebExchange;
 import run.halo.app.core.extension.endpoint.SortResolver;
 import run.halo.app.extension.Extension;
+import run.halo.app.extension.ListOptions;
 import run.halo.app.extension.router.IListRequest;
 import top.aiheiyo.map.Map;
 
@@ -20,7 +21,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import static java.util.Comparator.comparing;
-import static run.halo.app.extension.router.selector.SelectorUtil.labelAndFieldSelectorToPredicate;
+import static run.halo.app.extension.router.selector.SelectorUtil.labelAndFieldSelectorToListOptions;
 
 /**
  * Description: MapQuery
@@ -95,9 +96,11 @@ public class MapQuery extends IListRequest.QueryListRequest {
             }
             return !StringUtils.equals(notContainPost, map.getSpec().getPost());
         };
-        Predicate<Extension> labelAndFieldSelectorToPredicate =
-                labelAndFieldSelectorToPredicate(getLabelSelector(), getFieldSelector());
-        return groupPredicate.and(keywordPredicate).and(labelAndFieldSelectorToPredicate).and(notContainPredicate);
+        return groupPredicate.and(keywordPredicate).and(notContainPredicate);
+    }
+
+    public ListOptions toListOptions() {
+        return labelAndFieldSelectorToListOptions(getLabelSelector(), getFieldSelector());
     }
 
     public Comparator<Map> toComparator() {

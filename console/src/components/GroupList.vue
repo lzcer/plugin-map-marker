@@ -65,8 +65,8 @@ const onPriorityChange = async () => {
 
 const handleDelete = async (group: MapGroup) => {
   Dialog.warning({
-    title: "确定要删除该分组吗？",
-    description: "将同时删除该分组下的所有地图标记，该操作不可恢复。",
+    title: "确定要删除该地点吗？",
+    description: "将同时删除该地点下的所有地图标记，该操作不可恢复。",
     confirmType: "danger",
     onConfirm: async () => {
       try {
@@ -118,65 +118,66 @@ function onEditingModalClose() {
     :group="selectedGroup"
     @close="onEditingModalClose"
   />
-  <VCard :body-class="['!p-0']" title="分组">
+  <VCard :body-class="['!p-0']" title="地点">
     <VLoading v-if="isLoading" />
     <Transition v-else appear name="fade">
-      <Draggable
-        v-model="draggableGroups"
-        class="links-box-border links-h-full links-w-full links-divide-y links-divide-gray-100"
-        group="group"
-        handle=".drag-element"
-        item-key="metadata.name"
-        tag="ul"
-        @change="onPriorityChange"
-      >
-        <template #header>
-          <li @click="groupQuery = ''">
-            <VEntity class="links-group" :is-selected="!groupQuery">
-              <template #start>
-                <VEntityField title="全部"> </VEntityField>
-              </template>
-            </VEntity>
-          </li>
-        </template>
-        <template #item="{ element: group }">
-          <li @click="groupQuery = group.metadata.name">
-            <VEntity
-              :is-selected="groupQuery === group.metadata.name"
-              class="links-group"
-            >
-              <template #prepend>
-                <div
-                  class="drag-element links-absolute links-inset-y-0 links-left-0 links-hidden links-w-3.5 links-cursor-move links-items-center links-bg-gray-100 links-transition-all hover:links-bg-gray-200 group-hover:links-flex"
-                >
-                  <IconList class="h-3.5 w-3.5" />
-                </div>
-              </template>
-
-              <template #start>
-                <VEntityField :title="group.spec?.displayName"></VEntityField>
-              </template>
-
-              <template #end>
-                <VEntityField v-if="group.metadata.deletionTimestamp">
-                  <template #description>
-                    <VStatusDot v-tooltip="`删除中`" state="warning" animate />
+      <div class="map-groups-table">
+        <table class="links-w-full links-border-collapse">
+          <Draggable
+            v-model="draggableGroups"
+            class="links-divide-y links-divide-gray-100"
+            group="group"
+            handle=".drag-element"
+            item-key="metadata.name"
+            tag="tbody"
+            @change="onPriorityChange"
+          >
+            <template #header>
+                <VEntity class="links-group links-cursor-pointer" :is-selected="!groupQuery" @click="groupQuery = ''">
+                  <template #start>
+                    <VEntityField title="全部地点"> </VEntityField>
                   </template>
-                </VEntityField>
-              </template>
+                </VEntity>
+            </template>
+            <template #item="{ element: group }">
+                <VEntity
+                  :is-selected="groupQuery === group.metadata.name"
+                  class="links-group links-cursor-pointer"
+                  @click="groupQuery = group.metadata.name"
+                >
+                  <template #prepend>
+                    <div
+                      class="drag-element links-absolute links-inset-y-0 links-left-0 links-hidden links-w-3.5 links-cursor-move links-items-center links-bg-gray-100 links-transition-all hover:links-bg-gray-200 group-hover:links-flex"
+                    >
+                      <IconList class="h-3.5 w-3.5" />
+                    </div>
+                  </template>
 
-              <template #dropdownItems>
-                <VDropdownItem @click="handleOpenEditingModal(group)">
-                  修改
-                </VDropdownItem>
-                <VDropdownItem type="danger" @click="handleDelete(group)">
-                  删除
-                </VDropdownItem>
-              </template>
-            </VEntity>
-          </li>
-        </template>
-      </Draggable>
+                  <template #start>
+                    <VEntityField :title="group.spec?.displayName"></VEntityField>
+                  </template>
+
+                  <template #end>
+                    <VEntityField v-if="group.metadata.deletionTimestamp">
+                      <template #description>
+                        <VStatusDot v-tooltip="`删除中`" state="warning" animate />
+                      </template>
+                    </VEntityField>
+                  </template>
+
+                  <template #dropdownItems>
+                    <VDropdownItem @click="handleOpenEditingModal(group)">
+                      编辑地点
+                    </VDropdownItem>
+                    <VDropdownItem type="danger" @click="handleDelete(group)">
+                      删除地点
+                    </VDropdownItem>
+                  </template>
+                </VEntity>
+            </template>
+          </Draggable>
+        </table>
+      </div>
     </Transition>
 
     <template v-if="!isLoading" #footer>
@@ -187,9 +188,23 @@ function onEditingModalClose() {
           type="secondary"
           @click="handleOpenEditingModal(undefined)"
         >
-          新建
+          新建地点
         </VButton>
       </Transition>
     </template>
   </VCard>
 </template>
+
+<style scoped>
+.map-groups-table {
+  width: 100%;
+  max-height: calc(100vh - 18rem);
+  overflow: auto;
+}
+
+@media (max-width: 1023px) {
+  .map-groups-table {
+    max-height: 18rem;
+  }
+}
+</style>

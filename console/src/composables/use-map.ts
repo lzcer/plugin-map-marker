@@ -14,6 +14,7 @@ export function useMapFetch(
   const {
     data: links,
     isLoading,
+    isError,
     refetch,
   } = useQuery({
     queryKey: ["links", page, size, group, keyword],
@@ -47,6 +48,7 @@ export function useMapFetch(
   return {
     links,
     isLoading,
+    isError,
     refetch,
     total,
   };

@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { Toast, VButton, VModal, VSpace } from "@halo-dev/components";
-import { consoleApiClient } from "@halo-dev/api-client";
+import { axiosInstance } from "@halo-dev/api-client";
+import axios from "axios";
 import AMapLoader from "@amap/amap-jsapi-loader";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 type Location = { getLng(): number; getLat(): number };
 type MapInstance = {
   on(event: string, handler: (event: { lnglat: Location }) => void): void;
-  setCenter(location: Location): void;
+  setCenter(location: [number, number]): void;
   destroy(): void;
 };
 type SearchResult = {
@@ -16,7 +17,7 @@ type SearchResult = {
 type MapApi = {
   Map: new (container: HTMLElement, options: object) => MapInstance;
   Marker: new (options: object) => {
-    setPosition(location: Location): void;
+    setPosition(location: [number, number]): void;
     setMap(map: MapInstance | null): void;
   };
   PlaceSearch: new (options: object) => {
@@ -27,9 +28,10 @@ type MapApi = {
   };
 };
 
-const props = defineProps<{ visible: boolean }>();
+const props = defineProps<{ visible: boolean; initialCoordinates?: string }>();
 const emit = defineEmits<{
   (event: "update:visible", visible: boolean): void;
+  (event: "confirm", coordinates: string): void;
 }>();
 
 const container = ref<HTMLElement>();
@@ -69,12 +71,21 @@ function destroyMap() {
 }
 
 function selectLocation(location: Location, address = "地图选点") {
-  longitude.value = location.getLng();
-  latitude.value = location.getLat();
+  const lng = location.getLng();
+  const lat = location.getLat();
+  if (
+    !Number.isFinite(lng) ||
+    !Number.isFinite(lat) ||
+    Math.abs(lng) > 180 ||
+    Math.abs(lat) > 90
+  )
+    return;
+  longitude.value = lng;
+  latitude.value = lat;
   selectedAddress.value = address;
-  marker?.setPosition(location);
+  marker?.setPosition([lng, lat]);
   marker?.setMap(map ?? null);
-  map?.setCenter(location);
+  map?.setCenter([lng, lat]);
 }
 
 async function initializeMap() {
@@ -83,12 +94,12 @@ async function initializeMap() {
   loading.value = true;
   error.value = "";
   try {
-    const response = await consoleApiClient.plugin.plugin.fetchPluginConfig({
-      name: "PluginMaps",
-    });
+    const response = await axiosInstance.get(
+      "/apis/api.console.halo.run/v1alpha1/plugins/PluginMaps/json-config"
+    );
     if (currentRequestId !== requestId) return;
 
-    const config = response.data.data?.gaode;
+    const config = response.data?.gaode;
     const gaode = typeof config === "string" ? JSON.parse(config) : config;
     if (!gaode?.key || !gaode?.securityJsCode) {
       throw new Error(
@@ -115,12 +126,30 @@ async function initializeMap() {
     placeSearch = new api.PlaceSearch({ pageSize: 1 });
     map.on("click", (event) => selectLocation(event.lnglat));
     ready.value = true;
+    const initial = props.initialCoordinates
+      ?.split(",")
+      .map((value) => value.trim());
+    if (initial?.length === 2 && initial.every(Boolean)) {
+      selectLocation(
+        { getLng: () => Number(initial[0]), getLat: () => Number(initial[1]) },
+        "当前地点位置"
+      );
+    }
   } catch (cause) {
     if (currentRequestId === requestId) {
-      error.value =
-        cause instanceof Error
-          ? cause.message
-          : "地图加载失败，请检查高德配置和网络连接。";
+      if (axios.isAxiosError(cause)) {
+        error.value =
+          cause.response?.status === 403
+            ? "没有读取插件配置的权限，请联系管理员。"
+            : cause.response?.status === 404
+            ? "插件配置接口不可用，请刷新控制台后重试。"
+            : "读取地图配置失败，请检查网络连接后重试。";
+      } else {
+        error.value =
+          cause instanceof Error && cause.message.startsWith("请先")
+            ? cause.message
+            : "地图加载失败，请检查高德配置和网络连接。";
+      }
     }
   } finally {
     if (currentRequestId === requestId) loading.value = false;
@@ -131,6 +160,7 @@ function search() {
   const address = keyword.value.trim();
   if (!address || !placeSearch || searching.value) return;
 
+  error.value = "";
   searching.value = true;
   longitude.value = undefined;
   latitude.value = undefined;
@@ -149,11 +179,17 @@ function search() {
   });
 }
 
+function confirm() {
+  if (!coordinates.value || searching.value) return;
+  emit("confirm", coordinates.value);
+  emit("update:visible", false);
+}
+
 async function copy() {
   if (!coordinates.value) return;
   try {
     await navigator.clipboard.writeText(coordinates.value);
-    Toast.success("坐标已复制，可粘贴到分组的坐标字段。");
+    Toast.success("坐标已复制，可粘贴到地点的坐标字段。");
   } catch {
     Toast.warning("复制失败，请手动选中坐标复制。");
   }
@@ -168,7 +204,8 @@ watch(
     }
     await nextTick();
     await initializeMap();
-  }
+  },
+  { immediate: true }
 );
 onBeforeUnmount(destroyMap);
 </script>
@@ -220,7 +257,13 @@ onBeforeUnmount(destroyMap);
     </div>
     <template #footer>
       <VSpace>
-        <VButton @click="emit('update:visible', false)">关闭</VButton>
+        <VButton
+          type="secondary"
+          :disabled="!coordinates || searching"
+          @click="confirm"
+          >确定</VButton
+        >
+        <VButton @click="emit('update:visible', false)">取消</VButton>
       </VSpace>
     </template>
   </VModal>

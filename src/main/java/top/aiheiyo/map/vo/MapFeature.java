@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Description:
@@ -65,22 +64,25 @@ public class MapFeature implements Serializable {
         }
 
         public boolean valid() {
-
-            if (Objects.isNull(this.getProperties())) {
+            if (properties == null || geometry == null) {
+                return false;
+            }
+            List<Double> coordinates = geometry.getCoordinates();
+            if (coordinates == null || coordinates.size() != 2
+                    || coordinates.stream().anyMatch(value -> value == null || !Double.isFinite(value))
+                    || Math.abs(coordinates.get(0)) > 180
+                    || Math.abs(coordinates.get(1)) > 90) {
                 return false;
             }
 
-            boolean valid = !CollectionUtils.isEmpty(this.getProperties().getPermalink()) && !CollectionUtils.isEmpty(this.getProperties().getDescription());
-            if (!valid) {
-                // 已打为可展示标记跳过
-                if (this.getMetas().contains(Constant.Common.SHOW)) {
-                    this.getProperties().setNopost(true);
-                    this.getProperties().setImage(Constant.Common.DEFAULT_IMAGE);
-                    return true;
-                }
+            // A place is visible even when no article has been linked to it yet.
+            boolean hasPosts = !CollectionUtils.isEmpty(properties.getPermalink())
+                    && !CollectionUtils.isEmpty(properties.getDescription());
+            properties.setNopost(!hasPosts);
+            if (!hasPosts && StringUtils.isBlank(properties.getImage())) {
+                properties.setImage(Constant.Common.DEFAULT_IMAGE);
             }
-
-            return valid;
+            return true;
         }
 
         @NoArgsConstructor
@@ -131,7 +133,7 @@ public class MapFeature implements Serializable {
             if (Objects.isNull(group)) {
                 return FeaturesDTO.of();
             }
-            MapFeature.FeaturesDTO.GeometryDTO geometry = MapFeature.FeaturesDTO.GeometryDTO.of(Lists.newArrayList(StringUtils.split(group.getSpec().getCoordinates(), ',')).stream().filter(StringUtils::isNotBlank).map(Double::valueOf).collect(Collectors.toList()));
+            MapFeature.FeaturesDTO.GeometryDTO geometry = MapFeature.FeaturesDTO.GeometryDTO.of(parseCoordinates(group.getSpec().getCoordinates()));
             MapFeature.FeaturesDTO.PropertiesDTO properties = MapFeature.FeaturesDTO.PropertiesDTO.of(group.getSpec().getDisplayName(), Lists.newArrayList(), Lists.newArrayList(), null);
             FeaturesDTO dto = of(geometry, properties);
             dto.setGroupName(group.getMetadata().getName());
@@ -141,6 +143,21 @@ public class MapFeature implements Serializable {
                 }
             }
             return dto;
+        }
+
+        private static List<Double> parseCoordinates(String value) {
+            if (StringUtils.isBlank(value)) {
+                return List.of();
+            }
+            try {
+                String[] parts = value.split(",", -1);
+                if (parts.length != 2) {
+                    return List.of();
+                }
+                return List.of(Double.valueOf(parts[0].trim()), Double.valueOf(parts[1].trim()));
+            } catch (NumberFormatException ignored) {
+                return List.of();
+            }
         }
 
         public FeaturesDTO propertiesWithPost(List<Post> posts, List<MapVo> maps) {

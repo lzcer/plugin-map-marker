@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.ReactiveExtensionClient;
+import run.halo.app.plugin.ReactiveSettingFetcher;
 import top.aiheiyo.map.Map;
 import top.aiheiyo.map.MapGroup;
 import top.aiheiyo.map.service.IMapService;
@@ -36,19 +37,26 @@ public class MapServiceImpl implements IMapService {
 
     private final ReactiveExtensionClient client;
     private final MarkerMapHelper markerMapHelper;
+    private final ReactiveSettingFetcher settingFetcher;
 
     @Override
     public Flux<MapFeature.FeaturesDTO> mapFeature() {
         Flux<Map> mapFlux = client.list(Map.class, null, defaultMapComparator());
 
-        return groupOfFeature()
-                .flatMap(group -> mapFlux
-                        .filter(map -> StringUtils.equals(map.groupName(), group.getGroupName()))
-                        .map(MapVo::from)
-                        .collectList()
-                        .flatMap((maps) -> loadData(group, maps))
-                        .defaultIfEmpty(group)
-                ).filter(MapFeature.FeaturesDTO::valid);
+        return settingFetcher.getSettingValue("display")
+                .map(settings -> settings.path("showPlacesWithoutPosts").asBoolean(true))
+                .defaultIfEmpty(true)
+                .flatMapMany(showPlacesWithoutPosts -> groupOfFeature()
+                        .flatMap(group -> mapFlux
+                                .filter(map -> StringUtils.equals(map.groupName(), group.getGroupName()))
+                                .map(MapVo::from)
+                                .collectList()
+                                .flatMap(maps -> loadData(group, maps))
+                                .defaultIfEmpty(group)
+                        )
+                        .filter(MapFeature.FeaturesDTO::valid)
+                        .filter(feature -> showPlacesWithoutPosts
+                                || !feature.getProperties().getNopost()));
     }
 
     private Mono<MapFeature.FeaturesDTO> loadData(MapFeature.FeaturesDTO group, List<MapVo> maps) {
