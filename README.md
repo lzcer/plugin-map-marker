@@ -71,6 +71,8 @@ Halo 2.0 适配插件, 在地图上标记文章。
 
 ## 1.5. 开发环境
 
+需要 JDK 21；项目使用 Gradle Wrapper 8.14.3，CI 同样使用 Java 21。
+
 ```bash
 git clone git@github.com:PG-Z/plugin-map-marker.git
 ```
